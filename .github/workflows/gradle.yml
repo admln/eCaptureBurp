@@ -1,33 +1,61 @@
-name: Build eCaptureBurp Extension
+# 工作流名称
+name: Gradle Build and Package
 
+# 触发条件：main分支推送、PR、手动触发
 on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+  push:
+    branches: [ main ]
+    paths-ignore:  # 忽略非代码文件的变更，避免不必要的构建
+      - 'README.md'
+      - 'LICENSE'
+      - '.gitignore'
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:  # 允许手动触发
 
+# 工作流权限配置
+permissions:
+  contents: read
+  packages: write
+
+# 构建作业定义
 jobs:
-  build:
-    runs-on: ubuntu-latest
+  build:
+    # 运行环境
+    runs-on: ubuntu-latest
 
-    steps:
-    - uses: actions/checkout@v4
-    
-    - name: Set up JDK 17
-      uses: actions/setup-java@v4
-      with:
-        java-version: '17'
-        distribution: 'temurin'
-        cache: gradle
-    
-    - name: Make gradlew executable
-      run: chmod +x ./gradlew
-      
-    - name: Build with Gradle
-      run: ./gradlew jar
-      
-    - name: Upload build artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: ecapture-burp-extension
-        path: build/libs/ecapture-burp-extension-1.0.0.jar
+    steps:
+      # 1. 检出代码
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # 拉取完整历史，便于版本号生成
+
+      # 2. 配置JDK环境（根据项目实际需求调整版本，这里默认用17）
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'  # 使用Eclipse Temurin JDK
+          cache: gradle  # 缓存Gradle依赖，加速构建
+
+      # 3. 赋予Gradle执行权限
+      - name: Make gradlew executable
+        run: chmod +x ./gradlew
+
+      # 4. 使用Gradle构建项目（生成JAR包）
+      - name: Build with Gradle
+        run: ./gradlew clean build --no-daemon
+        # --no-daemon 禁用Gradle守护进程，适合CI环境
+
+      # 5. 上传构建产物（JAR包）
+      - name: Upload JAR artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: eCaptureBurp-jar
+          # 匹配所有JAR包（根据项目实际输出路径调整）
+          path: |
+            build/libs/*.jar
+            !build/libs/*-sources.jar
+            !build/libs/*-javadoc.jar
+          retention-days: 30  # 产物保留30天
