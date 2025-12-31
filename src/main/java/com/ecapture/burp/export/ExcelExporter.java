@@ -1,102 +1,64 @@
 package com.ecapture.burp.export;
 
 import com.ecapture.burp.event.MatchedHttpPair;
-import org.apache.poi.ss.usermodel.Cell;
-import org.apache.poi.ss.usermodel.CellStyle;
-import org.apache.poi.ss.usermodel.CreationHelper;
-import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.ss.usermodel.Sheet;
-import org.apache.poi.ss.usermodel.Workbook;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 /**
- * Simple Excel exporter using Apache POI.
+ * Simple CSV exporter to avoid Apache POI dependency. Writes a UTF-8 CSV with quoted fields.
  */
 public class ExcelExporter {
 
     public static void writeXlsx(OutputStream out, List<MatchedHttpPair> pairs, List<String> columns) throws Exception {
-        try (Workbook wb = new XSSFWorkbook()) {
-            CreationHelper createHelper = wb.getCreationHelper();
-            Sheet sheet = wb.createSheet("eCapture");
+        // We'll write CSV text and let user open it with Excel. File extension may be .csv even if caller passes .xlsx
+        StringBuilder sb = new StringBuilder();
 
-            int rowIdx = 0;
-            // Header
-            Row header = sheet.createRow(rowIdx++);
-            for (int c = 0; c < columns.size(); c++) {
-                Cell cell = header.createCell(c);
-                cell.setCellValue(columns.get(c));
-            }
-
-            // Rows
-            for (MatchedHttpPair pair : pairs) {
-                Row r = sheet.createRow(rowIdx++);
-                for (int c = 0; c < columns.size(); c++) {
-                    String col = columns.get(c);
-                    Cell cell = r.createCell(c);
-                    switch (col) {
-                        case "#":
-                            cell.setCellValue(pair.getUuid());
-                            break;
-                        case "Time":
-                            cell.setCellValue(pair.getTimestamp());
-                            break;
-                        case "Method":
-                            cell.setCellValue(pair.getMethod());
-                            break;
-                        case "Host":
-                            cell.setCellValue(pair.getHost());
-                            break;
-                        case "URL":
-                            cell.setCellValue(pair.getUrl());
-                            break;
-                        case "Status":
-                            cell.setCellValue(pair.getStatusCode());
-                            break;
-                        case "Req Len":
-                            cell.setCellValue(pair.getRequestLength());
-                            break;
-                        case "Resp Len":
-                            cell.setCellValue(pair.getResponseLength());
-                            break;
-                        case "Process":
-                            cell.setCellValue(pair.getProcessInfo());
-                            break;
-                        case "Complete":
-                            cell.setCellValue(pair.isComplete() ? "✓" : "...");
-                            break;
-                        case "Request Body":
-                            if (pair.getRequest() != null && pair.getRequest().getPayload() != null) {
-                                byte[] p = pair.getRequest().getPayload();
-                                cell.setCellValue(new String(p, StandardCharsets.UTF_8));
-                            } else {
-                                cell.setCellValue("");
-                            }
-                            break;
-                        case "Response Body":
-                            if (pair.getResponse() != null && pair.getResponse().getPayload() != null) {
-                                byte[] p = pair.getResponse().getPayload();
-                                cell.setCellValue(new String(p, StandardCharsets.UTF_8));
-                            } else {
-                                cell.setCellValue("");
-                            }
-                            break;
-                        default:
-                            cell.setCellValue("");
-                    }
-                }
-            }
-
-            // Auto-size first few columns
-            for (int c = 0; c < Math.min(10, columns.size()); c++) {
-                sheet.autoSizeColumn(c);
-            }
-
-            wb.write(out);
+        // header
+        for (int i = 0; i < columns.size(); i++) {
+            if (i > 0) sb.append(',');
+            sb.append('"').append(escape(columns.get(i))).append('"');
         }
+        sb.append('\n');
+
+        for (MatchedHttpPair pair : pairs) {
+            for (int i = 0; i < columns.size(); i++) {
+                if (i > 0) sb.append(',');
+                String col = columns.get(i);
+                String value = "";
+                switch (col) {
+                    case "#": value = pair.getUuid(); break;
+                    case "Time": value = pair.getTimestamp(); break;
+                    case "Method": value = pair.getMethod(); break;
+                    case "Host": value = pair.getHost(); break;
+                    case "URL": value = pair.getUrl(); break;
+                    case "Status": value = pair.getStatusCode(); break;
+                    case "Req Len": value = Integer.toString(pair.getRequestLength()); break;
+                    case "Resp Len": value = Integer.toString(pair.getResponseLength()); break;
+                    case "Process": value = pair.getProcessInfo(); break;
+                    case "Complete": value = pair.isComplete() ? "✓" : "..."; break;
+                    case "Request Body":
+                        if (pair.getRequest() != null && pair.getRequest().getPayload() != null)
+                            value = new String(pair.getRequest().getPayload(), StandardCharsets.UTF_8);
+                        break;
+                    case "Response Body":
+                        if (pair.getResponse() != null && pair.getResponse().getPayload() != null)
+                            value = new String(pair.getResponse().getPayload(), StandardCharsets.UTF_8);
+                        break;
+                    default:
+                        value = "";
+                }
+                sb.append('"').append(escape(value)).append('"');
+            }
+            sb.append('\n');
+        }
+
+        out.write(sb.toString().getBytes(StandardCharsets.UTF_8));
+    }
+
+    private static String escape(String s) {
+        if (s == null) return "";
+        return s.replace("\"", "\"\"");
     }
 }
-
