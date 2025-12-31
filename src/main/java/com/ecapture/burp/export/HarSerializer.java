@@ -90,7 +90,9 @@ public class HarSerializer {
                 sb.append('}');
             }
 
-            sb.append('}'); // end response
+            // add protocol as comment
+            sb.append(',');
+            sb.append("\"comment\":\"").append(escape(pair.getProtocol())).append("\"");
 
             sb.append('}'); // end entry
         }

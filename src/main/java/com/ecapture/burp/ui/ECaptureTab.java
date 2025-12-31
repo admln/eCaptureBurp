@@ -61,9 +61,9 @@ public class ECaptureTab {
     private final com.ecapture.burp.export.ExportManager exportManager = new com.ecapture.burp.export.ExportManager();
     private java.util.List<String> exportColumns = new java.util.ArrayList<>();
 
-    // Table columns
+    // Table columns (add Protocol column)
     private static final String[] COLUMN_NAMES = {
-            "#", "Time", "Method", "Host", "URL", "Status", "Req Len", "Resp Len", "Process", "Complete"
+            "#", "Time", "Proto", "Method", "Host", "URL", "Status", "Req Len", "Resp Len", "Process", "Complete"
     };
     
     // Map pair ID to table row index for updates
@@ -210,15 +210,16 @@ public class ECaptureTab {
         // Set column widths
         eventTable.getColumnModel().getColumn(0).setPreferredWidth(40);  // #
         eventTable.getColumnModel().getColumn(1).setPreferredWidth(120); // Time
-        eventTable.getColumnModel().getColumn(2).setPreferredWidth(60);  // Method
-        eventTable.getColumnModel().getColumn(3).setPreferredWidth(150); // Host
-        eventTable.getColumnModel().getColumn(4).setPreferredWidth(250); // URL
-        eventTable.getColumnModel().getColumn(5).setPreferredWidth(50);  // Status
-        eventTable.getColumnModel().getColumn(6).setPreferredWidth(60);  // Req Len
-        eventTable.getColumnModel().getColumn(7).setPreferredWidth(60);  // Resp Len
-        eventTable.getColumnModel().getColumn(8).setPreferredWidth(120); // Process
-        eventTable.getColumnModel().getColumn(9).setPreferredWidth(60);  // Complete
-        
+        eventTable.getColumnModel().getColumn(2).setPreferredWidth(60);  // Proto
+        eventTable.getColumnModel().getColumn(3).setPreferredWidth(60);  // Method
+        eventTable.getColumnModel().getColumn(4).setPreferredWidth(150); // Host
+        eventTable.getColumnModel().getColumn(5).setPreferredWidth(250); // URL
+        eventTable.getColumnModel().getColumn(6).setPreferredWidth(50);  // Status
+        eventTable.getColumnModel().getColumn(7).setPreferredWidth(60);  // Req Len
+        eventTable.getColumnModel().getColumn(8).setPreferredWidth(60);  // Resp Len
+        eventTable.getColumnModel().getColumn(9).setPreferredWidth(120); // Process
+        eventTable.getColumnModel().getColumn(10).setPreferredWidth(60);  // Complete
+
         // Row sorter for filtering
         tableSorter = new TableRowSorter<>(tableModel);
         eventTable.setRowSorter(tableSorter);
@@ -355,10 +356,10 @@ public class ECaptureTab {
             
             if (existingRow != null && existingRow < tableModel.getRowCount()) {
                 // Update existing row (response arrived)
-                tableModel.setValueAt(pair.getStatusCode(), existingRow, 5);
-                tableModel.setValueAt(pair.getResponseLength(), existingRow, 7);
-                tableModel.setValueAt(pair.isComplete() ? "✓" : "...", existingRow, 9);
-                
+                tableModel.setValueAt(pair.getStatusCode(), existingRow, 6);
+                tableModel.setValueAt(pair.getResponseLength(), existingRow, 8);
+                tableModel.setValueAt(pair.isComplete() ? "✓" : "...", existingRow, 10);
+
             } else {
                 // Add new row
                 int rowNum = tableModel.getRowCount();
@@ -366,6 +367,7 @@ public class ECaptureTab {
                 java.util.Vector<Object> rowData = new java.util.Vector<>();
                 rowData.add(rowNum + 1);
                 rowData.add(pair.getTimestamp());
+                rowData.add(pair.getProtocol());
                 rowData.add(pair.getMethod());
                 rowData.add(pair.getHost());
                 rowData.add(pair.getUrl());

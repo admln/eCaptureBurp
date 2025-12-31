@@ -30,6 +30,7 @@ public class ExcelExporter {
                 switch (col) {
                     case "#": value = pair.getUuid(); break;
                     case "Time": value = pair.getTimestamp(); break;
+                    case "Proto": value = pair.getProtocol(); break;
                     case "Method": value = pair.getMethod(); break;
                     case "Host": value = pair.getHost(); break;
                     case "URL": value = pair.getUrl(); break;
